@@ -1,0 +1,21 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  image: alpine
+  before_script:
+    - apk add git
+    - apk add openssh-client
+    - apk add openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H  SERVER_IP >> ~/.ssh/known_hosts
+  script:
+    - ssh -o StrictHostKeyChecking=no USER@SERVER_IP "curl -sL https://rpm.nodesource.com/setup_12.x | sudo -E bash - " 
+    - ssh -o StrictHostKeyChecking=no USER@SERVER_IP yum install npm -y 
+    - ssh -o StrictHostKeyChecking=no USER@SERVER_IP "cd /var/www/html ;[ -d "/var/www/ng" ] && echo git pull || echo git clone github@git"
+    - ssh -o StrictHostKeyChecking=no USER@SERVER_IP "cd /var/www/html/ng ;npm install"
+    - ssh -o StrictHostKeyChecking=no USER@SERVER_IP "cd /var/www/html/ng ;npm start &"
